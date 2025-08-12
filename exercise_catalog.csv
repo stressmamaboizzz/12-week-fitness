@@ -1,0 +1,17 @@
+exercise,category,primary_muscle,media_url,cues,rep_low,rep_high,increment_kg
+Goblet Squat,Lower Body,Quads,https://raw.githubusercontent.com/oss-media-examples/exercises/main/goblet_squat.gif,"Elbows in, chest up, drive through mid-foot",8,15,2.5
+Smith Incline Press,Upper Push,Chest,https://raw.githubusercontent.com/oss-media-examples/exercises/main/smith_incline_press.gif,"Scapula set, soft lockout, control eccentric",8,12,2.5
+Lat Pulldown,Upper Pull,Lats,https://raw.githubusercontent.com/oss-media-examples/exercises/main/lat_pulldown.gif,"Pull elbows to ribs, don't shrug",8,12,2.5
+Dumbbell Romanian Deadlift,Lower Body,Hamstrings,https://raw.githubusercontent.com/oss-media-examples/exercises/main/db_rdl.gif,"Hinge hips, neutral spine, slight knee bend",8,12,2.5
+Russian Twist,Core,Obliques,https://raw.githubusercontent.com/oss-media-examples/exercises/main/russian_twist.gif,"Ribs down, rotate from trunk, heels light",16,30,1.0
+Jump Squat,Conditioning,Quads,https://raw.githubusercontent.com/oss-media-examples/exercises/main/jump_squat.gif,"Soft landing, absorb, full hip extension",10,15,0.0
+Dumbbell Snatch (L/R),Conditioning,Shoulders,https://raw.githubusercontent.com/oss-media-examples/exercises/main/db_snatch.gif,"Drive legs, pull close, punch overhead",8,12,2.5
+Burpee,Conditioning,Full Body,https://raw.githubusercontent.com/oss-media-examples/exercises/main/burpee.gif,"Neutral spine, soft landing, rhythm",10,15,0.0
+Plank Row,Core,Lats,https://raw.githubusercontent.com/oss-media-examples/exercises/main/plank_row.gif,"Hips square, row to hip, brace",8,12,1.0
+Dumbbell Swing,Conditioning,Glutes,https://raw.githubusercontent.com/oss-media-examples/exercises/main/db_swing.gif,"Hinge, snap hips, don't squat",12,20,2.5
+Flutter Kicks,Core,Abs,https://raw.githubusercontent.com/oss-media-examples/exercises/main/flutter_kicks.gif,"Ribs down, small fast kicks",20,40,0.0
+Bulgarian Split Squat,Lower Body,Quads,https://raw.githubusercontent.com/oss-media-examples/exercises/main/bulgarian_split_squat.gif,"Knee forward, torso tall, full depth",8,12,2.5
+One-arm Shoulder Press,Upper Push,Delts,https://raw.githubusercontent.com/oss-media-examples/exercises/main/one_arm_sh_press.gif,"Ribs down, press slightly forward",8,12,2.5
+Smith Sumo Deadlift,Lower Body,Glutes,https://raw.githubusercontent.com/oss-media-examples/exercises/main/smith_sumo_dl.gif,"Wide stance, knees out, drive hips",6,10,2.5
+Renegade Row,Core,Lats,https://raw.githubusercontent.com/oss-media-examples/exercises/main/renegade_row.gif,"Feet wider, anti-rotation, row to pocket",8,12,1.0
+Single-leg Glute Bridge,Glutes,Glutes,https://raw.githubusercontent.com/oss-media-examples/exercises/main/sl_glute_bridge.gif,"Posterior tilt, push through heel",10,15,1.0
