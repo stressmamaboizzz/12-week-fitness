@@ -1,10 +1,13 @@
 import streamlit as st
 import pandas as pd
+import time
+from datetime import datetime
 
 st.set_page_config(page_title="12-Week Fitness Coach", page_icon="💪", layout="centered")
+st.title("💪 12-Week Fitness Coach")
+st.caption("Mobile-first • 3 sessions/week • 50' per session • Dark-ready")
 
-# ====== DATA (embedded – no CSVs needed) ======
-# Workout: 12 weeks x 3 sessions/week
+# ---------- Embedded weekly plan (giữ như cũ) ----------
 weekly_schedule = ["Monday", "Wednesday", "Friday"]
 focuses = ["Strength + Hypertrophy", "Cardio HIIT + Core", "Functional + Balance"]
 workouts_map = {
@@ -18,102 +21,168 @@ for week in range(1, 13):
         workout_rows.append([f"Week {week}", day, focus, workouts_map[focus]])
 workout_df = pd.DataFrame(workout_rows, columns=["Week","Day","Focus","Workout"])
 
-# Meal plan (7 days x 4 meals)
-meal_plan = {
-    "Day 1": [("Breakfast","Oatmeal + 2 boiled eggs",350,22,30,14),("Lunch","Grilled chicken + brown rice + broccoli",450,40,35,12),("Snack","Greek yogurt + almonds",200,12,10,12),("Dinner","Salmon + veggies + sweet potato",500,38,25,20)],
-    "Day 2": [("Breakfast","Protein smoothie (whey, banana, oats)",350,30,30,8),("Lunch","Beef stir-fry + rice + veg",450,35,40,15),("Snack","Boiled egg + fruit",200,10,15,8),("Dinner","Tofu + quinoa + kale salad",500,30,35,18)],
-    "Day 3": [("Breakfast","Toast + scrambled eggs + avocado",400,20,25,20),("Lunch","Grilled fish + pumpkin + spinach",450,35,20,15),("Snack","Whey + apple",200,25,15,2),("Dinner","Chicken + brown rice + salad",500,38,35,12)],
-    "Day 4": [("Breakfast","Yogurt + granola + berries",350,20,30,10),("Lunch","Turkey + couscous + steamed veg",450,35,30,12),("Snack","Protein bar",200,20,15,6),("Dinner","Beef + veg + mashed cauliflower",500,35,25,18)],
-    "Day 5": [("Breakfast","Egg white omelet + toast",350,25,25,10),("Lunch","Shrimp + rice noodles + bok choy",450,30,40,12),("Snack","Low-fat milk + banana",200,10,25,5),("Dinner","Grilled chicken + sweet potato + greens",500,35,30,15)],
-    "Day 6": [("Breakfast","Cottage cheese + pear + walnuts",350,25,25,12),("Lunch","Tuna salad + toast + soup",450,35,25,15),("Snack","Protein shake",200,25,10,2),("Dinner","Lean pork + rice + sautéed spinach",500,38,35,15)],
-    "Day 7": [("Breakfast","Oatmeal + peanut butter + egg",350,22,30,14),("Lunch","Grilled tofu + rice + cabbage slaw",450,30,35,15),("Snack","Boiled egg + nuts",200,12,5,14),("Dinner","Steamed fish + veg + brown rice",500,36,30,16)]
-}
-meal_entries = []
-for day, meals in meal_plan.items():
-    for meal in meals:
-        meal_entries.append([day, *meal])
-meal_df = pd.DataFrame(meal_entries, columns=["Day","Meal Time","Food","Calories","Protein (g)","Carbs (g)","Fats (g)"])
+# ---------- NEW: Load Exercise Catalog ----------
+@st.cache_data
+def load_catalog():
+    try:
+        cat = pd.read_csv("exercise_catalog.csv")
+    except Exception:
+        # fallback tối thiểu nếu chưa có file
+        cat = pd.DataFrame(columns=["exercise","category","primary_muscle","media_url","cues","rep_low","rep_high","increment_kg"])
+    # chuẩn hóa tên
+    if "exercise" in cat.columns:
+        cat["exercise_key"] = cat["exercise"].str.strip().str.lower()
+    return cat
 
-# Progress template (editable in-session; downloadable as CSV)
-progress_df = pd.DataFrame([[f"Week {w}","","","","","","",""] for w in range(1,13)],
-    columns=["Week","Body Weight (kg)","Body Fat (%)","Waist (cm)","Hip (cm)","Workout Sessions","Energy Level (1-5)","Notes"])
+catalog = load_catalog()
 
-# ====== THEME (dark) via CSS – no config file needed ======
-st.markdown("""
-<style>
-:root { --accent: #00B487; }
-a, .st-emotion-cache-1dp5vir { color: var(--accent) !important; }
-.stButton>button { background: rgba(0,180,135,0.12); border: 1px solid var(--accent); color: #E6FFF7; border-radius: 8px; }
-</style>
-""", unsafe_allow_html=True)
+# ---------- NEW: Local log in session (kèm download) ----------
+if "log_df" not in st.session_state:
+    st.session_state["log_df"] = pd.DataFrame(columns=[
+        "datetime","week","day","exercise","set","weight_kg","reps","rir_or_rpe","set_time_s","notes"
+    ])
 
-# ====== UI ======
-st.title("💪 12-Week Fitness Coach")
-st.caption("Optimized for iPhone & iPad — 3 sessions/week • 50' per session (Dark Mode)")
+def add_log_row(week, day, exercise, data_rows):
+    # data_rows: list of dicts {set, weight_kg, reps, rir_or_rpe, set_time_s}
+    now = datetime.now().isoformat(timespec="seconds")
+    new_rows = []
+    for r in data_rows:
+        new_rows.append({
+            "datetime": now, "week": week, "day": day, "exercise": exercise,
+            "set": r.get("set",1), "weight_kg": r.get("weight_kg",0.0),
+            "reps": r.get("reps",0), "rir_or_rpe": r.get("rir_or_rpe",""),
+            "set_time_s": r.get("set_time_s",0), "notes": r.get("notes","")
+        })
+    st.session_state["log_df"] = pd.concat([st.session_state["log_df"], pd.DataFrame(new_rows)], ignore_index=True)
 
-with st.sidebar:
-    st.header("Targets")
-    st.markdown("""
-- Weight: 79 → **67 kg**
-- Body Fat: 27% → **~18–20%**
-- Frequency: **3x/week**, 50’ per session
-- Equipment: Dumbbell • Lat Pulldown • Smith
-""")
-    st.markdown("---")
-    st.write("Data export")
-    st.download_button("Workout CSV", workout_df.to_csv(index=False), file_name="workout_plan.csv")
-    st.download_button("Meal CSV", meal_df.to_csv(index=False), file_name="meal_plan.csv")
-    st.download_button("Progress CSV (blank)", progress_df.to_csv(index=False), file_name="progress_tracker.csv")
+def history_for_exercise(ex_name):
+    df = st.session_state["log_df"]
+    if df.empty: return df
+    return df[df["exercise"].str.lower()==ex_name.strip().lower()].sort_values("datetime")
 
-tab1, tab2, tab3 = st.tabs(["📅 Workout", "🍽️ Meal Plan", "📈 Progress"])
+# ---------- NEW: Auto-progression heuristic ----------
+def suggest_next_load(exercise, last_weight, last_reps, rep_low, rep_high, inc):
+    """
+    Double progression logic (đơn giản & an toàn):
+    - Nếu đạt >= rep_high: +inc kg
+    - Nếu giữa rep_low và rep_high: giữ weight
+    - Nếu < rep_low: -inc kg (tối thiểu về 0)
+    """
+    if inc is None or pd.isna(inc): inc = 2.5
+    if rep_high is None or pd.isna(rep_high): rep_high = 12
+    if rep_low is None or pd.isna(rep_low): rep_low = 8
+    if last_weight is None or pd.isna(last_weight): last_weight = 0.0
+    if last_reps is None or pd.isna(last_reps): last_reps = rep_low
+
+    if last_reps >= rep_high:
+        return max(0.0, round(last_weight + inc, 1)), f"Đạt {last_reps} ≥ {rep_high} reps → **tăng +{inc} kg**"
+    elif last_reps < rep_low:
+        return max(0.0, round(last_weight - inc, 1)), f"Dưới {rep_low} reps → **giảm -{inc} kg** để giữ kỹ thuật"
+    else:
+        return round(last_weight, 1), "Trong dải mục tiêu → **giữ mức tạ** và cố gắng tăng reps"
+
+# ---------- TIMER đơn giản cho rest/set ----------
+def rest_timer(seconds=60, key="timer"):
+    if st.button(f"▶️ Bắt đầu đếm ngược {seconds}s", key=f"{key}_start"):
+        st.session_state[f"{key}_start_time"] = time.time()
+        st.session_state[f"{key}_duration"] = seconds
+    if f"{key}_start_time" in st.session_state:
+        elapsed = int(time.time() - st.session_state[f"{key}_start_time"])
+        remain = max(0, st.session_state[f"{key}_duration"] - elapsed)
+        st.progress(1 - remain/max(1, st.session_state[f"{key}_duration"]))
+        st.write(f"⏳ Còn lại: **{remain}s**")
+        if remain == 0:
+            st.success("Hết thời gian nghỉ!")
+
+# ---------- UI ----------
+tab1, tab2, tab3, tab4 = st.tabs(["📅 Plan", "📝 Tracking", "📈 Gợi ý tải", "📦 Export"])
 
 with tab1:
     st.subheader("Weekly Schedule")
-    week_list = sorted(workout_df["Week"].unique(), key=lambda x: int(x.split()[-1]))
-    selected_week = st.selectbox("Choose Week", week_list, index=0)
-    wdf = workout_df[workout_df["Week"] == selected_week]
+    week = st.selectbox("Week", sorted(workout_df["Week"].unique(), key=lambda x:int(x.split()[-1])))
+    wdf = workout_df[workout_df["Week"]==week]
     for _, row in wdf.iterrows():
         with st.expander(f"{row['Day']} — {row['Focus']}"):
-            st.markdown("**Routine:**")
-            for it in [x.strip() for x in row["Workout"].split(",")]:
-                st.markdown(f"- {it}")
-            st.markdown("**Protocol:** 3 sets each, 8–15 reps. Rest 30–60s.")
-            st.checkbox(f"Completed: {row['Day']}", key=f"done_{selected_week}_{row['Day']}")
+            items = [x.strip() for x in row["Workout"].split(",")]
+            for it in items:
+                # media
+                media = None
+                cues = ""
+                rep_low = rep_high = inc = None
+                if not catalog.empty:
+                    ck = it.strip().lower()
+                    match = catalog[catalog["exercise_key"]==ck]
+                    if not match.empty:
+                        media = match["media_url"].iloc[0]
+                        cues = match["cues"].iloc[0]
+                        rep_low = match["rep_low"].iloc[0]
+                        rep_high = match["rep_high"].iloc[0]
+                        inc = match["increment_kg"].iloc[0]
+                st.markdown(f"**{it}**  \n_Target reps:_ **{rep_low or 8}–{rep_high or 12}**")
+                if media and isinstance(media, str) and media.startswith("http"):
+                    st.image(media, use_container_width=True)
+                if cues:
+                    st.caption(f"Form cues: {cues}")
 
 with tab2:
-    st.subheader("7-Day Fat Loss Menu (≈1500–1600 kcal/day)")
-    day_names = list(meal_df["Day"].unique())
-    sel_day = st.selectbox("Day", day_names, index=0)
-    mdf = meal_df[meal_df["Day"] == sel_day]
-    st.dataframe(mdf, use_container_width=True)
-    st.markdown(f"**Daily total:** {int(mdf['Calories'].sum())} kcal • Protein {int(mdf['Protein (g)'].sum())} g")
+    st.subheader("Nhập set cho từng bài")
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        week = st.selectbox("Tuần", sorted(workout_df["Week"].unique(), key=lambda x:int(x.split()[-1])), key="trk_week")
+    with c2:
+        day = st.selectbox("Ngày", weekly_schedule, key="trk_day")
+    with c3:
+        # chọn exercise từ catalog trước, fallback từ plan
+        ex_list = catalog["exercise"].tolist() if not catalog.empty else sorted({e for s in workouts_map.values() for e in [x.strip() for x in s.split(",")]})
+        exercise = st.selectbox("Bài tập", ex_list, key="trk_ex")
+
+    st.markdown("**Nhập dữ liệu set** (có thể sửa trong bảng):")
+    default_sets = pd.DataFrame([
+        {"set":1,"weight_kg":0.0,"reps":8,"rir_or_rpe":"RIR2","set_time_s":0,"notes":""},
+        {"set":2,"weight_kg":0.0,"reps":8,"rir_or_rpe":"RIR2","set_time_s":0,"notes":""},
+        {"set":3,"weight_kg":0.0,"reps":8,"rir_or_rpe":"RIR2","set_time_s":0,"notes":""},
+    ])
+    edited = st.data_editor(default_sets, num_rows="dynamic", use_container_width=True)
+    rest_timer(60, key="rest1")
+
+    if st.button("➕ Lưu các set vào lịch sử"):
+        rows = edited.to_dict(orient="records")
+        add_log_row(week, day, exercise, rows)
+        st.success(f"Đã lưu {len(rows)} set cho {exercise}")
+
+    if not st.session_state["log_df"].empty:
+        st.markdown("### Lịch sử gần đây")
+        recent = st.session_state["log_df"].tail(20)
+        st.dataframe(recent, use_container_width=True)
 
 with tab3:
-    st.subheader("Weekly Check-in")
-    # keep a copy in session
-    if "progress_state" not in st.session_state:
-        st.session_state["progress_state"] = progress_df.copy()
-    p = st.session_state["progress_state"]
-    week_select = st.selectbox("Week", p["Week"].tolist(), index=0)
-    row_idx = p[p["Week"] == week_select].index[0]
+    st.subheader("Gợi ý tải cho buổi kế tiếp")
+    if st.session_state["log_df"].empty:
+        st.info("Chưa có dữ liệu. Hãy lưu ít nhất 1 set ở tab Tracking.")
+    else:
+        # chọn bài để gợi ý
+        ex_list_hist = sorted(st.session_state["log_df"]["exercise"].str.title().unique())
+        ex_sel = st.selectbox("Chọn bài", ex_list_hist)
+        hist = history_for_exercise(ex_sel)
+        last = hist.sort_values(["datetime","set"]).tail(1)
+        if not last.empty:
+            last_weight = pd.to_numeric(last["weight_kg"]).iloc[0] if "weight_kg" in last else 0.0
+            last_reps = pd.to_numeric(last["reps"]).iloc[0] if "reps" in last else 8
+            # lấy target từ catalog
+            rep_low = rep_high = inc = None
+            if not catalog.empty:
+                m = catalog[catalog["exercise_key"]==ex_sel.strip().lower()]
+                if not m.empty:
+                    rep_low = m["rep_low"].iloc[0]
+                    rep_high = m["rep_high"].iloc[0]
+                    inc = m["increment_kg"].iloc[0]
+            next_load, rationale = suggest_next_load(ex_sel, last_weight, last_reps, rep_low, rep_high, inc)
+            st.metric(label=f"Khuyến nghị mức tạ (kg) cho {ex_sel}", value=next_load, delta=rationale)
+            st.caption("Logic: double progression (đạt đỉnh reps → tăng tải; dưới ngưỡng → giảm; còn lại → giữ).")
+        else:
+            st.info("Chưa có lịch sử cho bài này.")
 
-    c1, c2 = st.columns(2)
-    with c1:
-        weight = st.number_input("Body Weight (kg)", min_value=0.0, value=79.0, step=0.1)
-        bodyfat = st.number_input("Body Fat (%)", min_value=0.0, value=27.0, step=0.1)
-        energy = st.slider("Energy (1–5)", 1, 5, 3)
-    with c2:
-        waist = st.number_input("Waist (cm)", min_value=0.0, value=85.0, step=0.5)
-        hip = st.number_input("Hip (cm)", min_value=0.0, value=95.0, step=0.5)
-        sessions = st.number_input("Workout Sessions", min_value=0, max_value=3, value=0, step=1)
-
-    notes = st.text_area("Notes", value="", height=80)
-
-    if st.button("Save Week Data"):
-        p.loc[row_idx, ["Body Weight (kg)","Body Fat (%)","Waist (cm)","Hip (cm)","Workout Sessions","Energy Level (1-5)","Notes"]] = [
-            weight, bodyfat, waist, hip, sessions, energy, notes
-        ]
-        st.success("Saved in session. Use download to export.")
-    st.download_button("⬇️ Download Updated Progress CSV", p.to_csv(index=False), file_name="progress_tracker_updated.csv")
-
-st.caption("Tip: Add this page to your iPhone/iPad Home Screen for an app-like experience.")
+with tab4:
+    st.subheader("Export / Backup")
+    st.download_button("⬇️ Tải lịch sử tập (CSV)", st.session_state["log_df"].to_csv(index=False), file_name="workout_log.csv")
+    st.caption("Mẹo: tải file sau mỗi buổi để lưu backup trên iCloud/Drive.")
