@@ -242,8 +242,8 @@ with tab_plan:
     for _, r in today.iterrows():
         ex, etype, proto = r["Exercise"], r["Type"], r["Protocol"]
         st.markdown(f"### {ex}")
-st.markdown(f"<span style='padding:4px 8px; border:1px solid #999; border-radius:6px; font-size:12px;'>{etype.upper()}</span>", unsafe_allow_html=True)
-st.write(proto)
+        st.markdown(f"<span style='padding:4px 8px; border:1px solid #999; border-radius:6px; font-size:12px;'>{etype.upper()}</span>", unsafe_allow_html=True)
+        st.write(proto)
         media=""; cues=""; rep_low=rep_high=inc=work_sec=rest_sec=None
         m = catalog[catalog["exercise_key"]==ex.strip().lower()] if not catalog.empty else pd.DataFrame()
         if not m.empty:
